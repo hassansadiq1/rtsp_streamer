@@ -199,15 +199,27 @@ def main(args):
         if not source_bin:
             sys.stderr.write("Unable to create source bin \n")
         detector._pipeline.add(source_bin)
+        source_bin.link(detector._tee)
+
+        src_pad1 = detector._tee.get_request_pad("src_0")
+        if not src_pad1:
+            sys.stderr.write("Unable to get tee src pad 1\n")
+
+        src_pad2 = detector._tee.get_request_pad("src_1")
+        if not src_pad2:
+            sys.stderr.write("Unable to get tee src pad 2\n")
+
+        sink_pad1 = detector._que4.get_static_pad("sink")
+        if not sink_pad1:
+            sys.stderr.write("Unable to get queue4 sink pad\n")
 
         padname = "sink_%u" % i
-        sinkpad = detector._streammux.get_request_pad(padname)
-        if not sinkpad:
-            sys.stderr.write("Unable to create sink pad bin \n")
-        srcpad = source_bin.get_static_pad("src")
-        if not srcpad:
-            sys.stderr.write("Unable to create src pad bin \n")
-        srcpad.link(sinkpad)
+        sink_pad2 = detector._streammux.get_request_pad(padname)
+        if not sink_pad2:
+            sys.stderr.write("Unable to get streammux sink pad\n")
+
+        src_pad1.link(sink_pad1)
+        src_pad2.link(sink_pad2)        
 
     # create an event loop and feed gstreamer bus mesages to it
     detector._bus = detector._pipeline.get_bus()
@@ -219,40 +231,76 @@ def main(args):
         sys.stderr.write(" Unable to get sink pad of nvosd \n")
 
     osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, osd_sink_pad_buffer_probe, 0)
-    port = str(args[i+2])
-    port = '5' + port[1:]
 
-    udpsink_port_num = int(port)
+    port1 = str(args[i+2])
+    port1 = '5' + port1[1:]
 
-    sink = Gst.ElementFactory.make("udpsink", "udpsink")
-    if not sink:
+    udpsink_port_num_1 = int(port1)
+
+    udp_sink_1 = Gst.ElementFactory.make("udpsink", "udpsink-1")
+    if not udp_sink_1:
         sys.stderr.write(" Unable to create udpsink")
 
-    sink.set_property('host', '224.224.255.255')
-    sink.set_property('port', udpsink_port_num)
-    sink.set_property('async', False)
-    sink.set_property('sync', 0)
-    sink.set_property("qos", 0)
+    udp_sink_1.set_property('host', '224.224.255.255')
+    udp_sink_1.set_property('port', udpsink_port_num_1)
+    udp_sink_1.set_property('async', False)
+    udp_sink_1.set_property('sync', 0)
+    udp_sink_1.set_property("qos", 0)
 
-    detector._pipeline.add(sink)
-    detector._rtppay.link(sink)
+    detector._pipeline.add(udp_sink_1)
+    detector._rtppay1.link(udp_sink_1)
 
     # Start streaming
-    rtsp_port_num = args[i + 2]
+    rtsp_port_num_1 = int(args[i + 2])
 
     server = GstRtspServer.RTSPServer.new()
-    server.props.service = f"{rtsp_port_num}"
+    server.props.service = f"{rtsp_port_num_1}"
     server.attach(None)
 
     factory = GstRtspServer.RTSPMediaFactory.new()
     factory.set_launch(
-        f"( udpsrc name=pay0 port={udpsink_port_num} buffer-size=524288 caps=\"application/x-rtp, media=video, clock-rate=90000, encoding-name=(string){detector.ENCODER_CODEC}, payload=96 \" )"
+        f"( udpsrc name=pay0 port={udpsink_port_num_1} buffer-size=524288 caps=\"application/x-rtp, media=video, clock-rate=90000, encoding-name=(string){detector.ENCODER_CODEC}, payload=96 \" )"
     )
     factory.set_shared(True)
     mount_point = '/' + str(args[i + 3])
     server.get_mount_points().add_factory(mount_point, factory)
 
-    print(f"\n ***Launched RTSP Streaming at rtsp://localhost:{rtsp_port_num}{mount_point} ***\n\n")
+    print(f"\n ***Launched Processed RTSP Streaming at rtsp://localhost:{rtsp_port_num_1}{mount_point} ***\n\n")
+
+    port2 = str(args[i+2])
+    port2 = '6' + port1[1:]
+
+    udpsink_port_num_2 = int(port2)
+
+    udp_sink_2 = Gst.ElementFactory.make("udpsink", "udpsink-2")
+    if not udp_sink_1:
+        sys.stderr.write(" Unable to create udpsink")
+
+    udp_sink_2.set_property('host', '224.224.255.255')
+    udp_sink_2.set_property('port', udpsink_port_num_2)
+    udp_sink_2.set_property('async', False)
+    udp_sink_2.set_property('sync', 0)
+    udp_sink_2.set_property("qos", 0)
+
+    detector._pipeline.add(udp_sink_2)
+    detector._rtppay2.link(udp_sink_2)
+
+    # Start streaming
+    rtsp_port_num_2 = rtsp_port_num_1 + 1
+
+    server = GstRtspServer.RTSPServer.new()
+    server.props.service = f"{rtsp_port_num_2}"
+    server.attach(None)
+
+    factory = GstRtspServer.RTSPMediaFactory.new()
+    factory.set_launch(
+        f"( udpsrc name=pay0 port={udpsink_port_num_2} buffer-size=524288 caps=\"application/x-rtp, media=video, clock-rate=90000, encoding-name=(string){detector.ENCODER_CODEC}, payload=96 \" )"
+    )
+    factory.set_shared(True)
+    mount_point = '/' + str(args[i + 3])
+    server.get_mount_points().add_factory(mount_point, factory)
+
+    print(f"\n ***Launched Orignial RTSP Streaming at rtsp://localhost:{rtsp_port_num_2}{mount_point} ***\n\n")
 
     # List the sources
     print("Now playing...")

@@ -30,8 +30,9 @@ class Pipeline:
         self._nvtracker = None
         self._fakesink = None
         self._capsfilter1 = self._capsfilter2 = self._capsfilter3 = None
-        self._tee = self._encoder = self._rtppay = self._muxer = self._filesink = None
+        self._tee = self._encoder1 = self._rtppay1 = self._muxer = self._filesink = None
         self._que1 = self._que2 = self._que3 = self._que4 = None
+        self._encoder2 = self._rtppay2 = None
 
         self._bus = None
         self._bus_watch_id = None
@@ -64,20 +65,27 @@ class Pipeline:
 
         self._fakesink = Gst.ElementFactory.make("fakesink", "fake-sink1")
 
+        self._tee = Gst.ElementFactory.make("tee", "tee-1")
+
         # encoder elements
         if self.ENCODER_CODEC == "H264":
             print("Creating H264 Encoder \n ")
-            self._encoder = Gst.ElementFactory.make("nvv4l2h264enc", "encoder-h264")
-            self._rtppay = Gst.ElementFactory.make("rtph264pay", "rtph264-pay")
+            self._encoder1 = Gst.ElementFactory.make("nvv4l2h264enc", "encoder-h264-1")
+            self._rtppay1 = Gst.ElementFactory.make("rtph264pay", "rtph264-pay-1")
+            self._encoder2 = Gst.ElementFactory.make("nvv4l2h264enc", "encoder-h264-2")
+            self._rtppay2 = Gst.ElementFactory.make("rtph264pay", "rtph264-pay-2")
         else:
             print("Creating H265 Encoder \n ")
-            self._encoder = Gst.ElementFactory.make("nvv4l2h265enc", "encoder-h265")
-            self._rtppay = Gst.ElementFactory.make("rtph265pay", "rtph265-pay")
+            self._encoder1 = Gst.ElementFactory.make("nvv4l2h265enc", "encoder-h265-1")
+            self._rtppay1 = Gst.ElementFactory.make("rtph265pay", "rtph265-pay-1")
+            self._encoder2 = Gst.ElementFactory.make("nvv4l2h265enc", "encoder-h265-1")
+            self._rtppay2 = Gst.ElementFactory.make("rtph265pay", "rtph265-pay-1")
 
         # queue elements
         self._que1 = Gst.ElementFactory.make("queue", "queue-1")
         self._que2 = Gst.ElementFactory.make("queue", "queue-2")
         self._que3 = Gst.ElementFactory.make("queue", "queue-3")
+        self._que4 = Gst.ElementFactory.make("queue", "queue-4")
 
         # capsfilter
         self._capsfilter1 = Gst.ElementFactory.make("capsfilter", "capsfilter-1")
@@ -89,7 +97,7 @@ class Pipeline:
             sys.stderr.write("Initial elements could not be created. Exiting.\n")
             exit(-1)
 
-        if (not self._pgie or not self._nvtracker  or not self._nvosd):
+        if (not self._pgie or not self._nvtracker  or not self._nvosd or not self._tee):
             sys.stderr.write("Pipeline elements could not be created. Exiting.\n")
             exit(-1)
         
@@ -98,11 +106,11 @@ class Pipeline:
             exit(-1)
 
 
-        if not self._encoder or not self._rtppay:
+        if not self._encoder1 or not self._rtppay1 or not self._encoder2 or not self._rtppay2:
             sys.stderr.write("Encoder elements could not be created. Exiting.\n")
             exit(-1)
 
-        if (not self._que1 or not self._que2 or not self._que3 or
+        if (not self._que1 or not self._que2 or not self._que3 or not self._que4 or
                 not self._capsfilter1 or not self._capsfilter2 or not self._capsfilter3):
             sys.stderr.write("queue or capsfilter elements could not be created. Exiting.\n")
             exit(-1)
@@ -118,8 +126,11 @@ class Pipeline:
         # I420 required for encoder
         caps1 = Gst.Caps.from_string("video/x-raw(memory:NVMM), format=I420")
         self._capsfilter1.set_property("caps", caps1)
+        caps2 = Gst.Caps.from_string("video/x-raw(memory:NVMM), format=I420")
+        self._capsfilter2.set_property("caps", caps2)
 
-        self._encoder.set_property('bitrate', self._BITRATE)
+        self._encoder1.set_property('bitrate', self._BITRATE)
+        self._encoder2.set_property('bitrate', self._BITRATE)
 
     def set_tracker_properties(self):
         # Set properties of tracker
@@ -156,13 +167,19 @@ class Pipeline:
         self._pipeline.add(self._nvtracker)
         self._pipeline.add(self._nvvideoconvert1)
         self._pipeline.add(self._nvvideoconvert2)
+        self._pipeline.add(self._nvvideoconvert3)
         self._pipeline.add(self._nvosd)
         self._pipeline.add(self._capsfilter1)
-        self._pipeline.add(self._encoder)
-        self._pipeline.add(self._rtppay)
+        self._pipeline.add(self._encoder1)
+        self._pipeline.add(self._rtppay1)
         self._pipeline.add(self._que1)
         self._pipeline.add(self._que2)
         self._pipeline.add(self._que3)
+        self._pipeline.add(self._que4)
+        self._pipeline.add(self._capsfilter2)
+        self._pipeline.add(self._encoder2)
+        self._pipeline.add(self._rtppay2)
+        self._pipeline.add(self._tee)
         # self._pipeline.add(self._fakesink)
 
         self._streammux.link(self._que1)
@@ -175,5 +192,11 @@ class Pipeline:
 
         self._que3.link(self._nvvideoconvert2)
         self._nvvideoconvert2.link(self._capsfilter1)
-        self._capsfilter1.link(self._encoder)
-        self._encoder.link(self._rtppay)
+        self._capsfilter1.link(self._encoder1)
+        self._encoder1.link(self._rtppay1)
+
+        self._que4.link(self._nvvideoconvert3)
+        self._nvvideoconvert3.link(self._capsfilter2)
+        self._capsfilter2.link(self._encoder2)
+        self._encoder2.link(self._rtppay2)
+        # self._rtppay2.link(self._fakesink)

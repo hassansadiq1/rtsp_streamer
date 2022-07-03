@@ -26,7 +26,7 @@
 gpu-id=0
 net-scale-factor=0.0039215697906911373
 tlt-model-key=tlt_encode
-model-engine-file=/opt/nvidia/deepstream/deepstream-5.1/sources/tensorrtx/yolov5/build/yolov5s.engine
+model-engine-file=../yolov5s.engine
 labelfile-path=labels.txt
 #input-dims=3;544;960;0
 batch-size=1

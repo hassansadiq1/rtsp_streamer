@@ -12,8 +12,8 @@ class Pipeline:
     def __init__(self):
 
         self._MAX_DISPLAY_LEN = 64
-        self._MUXER_OUTPUT_WIDTH = 1920
-        self._MUXER_OUTPUT_HEIGHT = 1080
+        self._MUXER_OUTPUT_WIDTH = 1280
+        self._MUXER_OUTPUT_HEIGHT = 720
         self._GST_CAPS_FEATURES_NVMM = "memory:NVMM"
         self._MAX_ELEMENTS_IN_DISPLAY_META = 16
         self._BITRATE = 4000000

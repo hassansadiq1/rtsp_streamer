@@ -11,10 +11,11 @@ cd /home/rtsp_streamer/
 ```
 3.Run the application as follows
 ```
-python3 main.py <rtsp input address> <rtsp output port>
+python3 main.py <rtsp input address> <rtsp output port> <mount point>
 ```
 
 Example command:
 ```
-python3 main.py rtsp://root:pass@192.168.1.212/axis-media/media.amp 8554
+python3 main.py rtsp://root:pass@192.168.1.212/axis-media/media.amp 8554 test
 ```
+THis will give you rtsp stream at rtsp://localhost:8554/test

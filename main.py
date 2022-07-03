@@ -168,8 +168,8 @@ def create_source_bin(index, uri):
 
 def main(args):
     # Check input arguments
-    if len(args) < 3:
-        sys.stderr.write("Usage: %s <rtsp input address> <rtsp output port>\n" % args[0])
+    if len(args) < 4:
+        sys.stderr.write("Usage: %s <rtsp input address> <rtsp output port> <mount point>\n" % args[0])
         sys.exit(1)
 
     # Standard GStreamer initialization
@@ -219,8 +219,11 @@ def main(args):
         sys.stderr.write(" Unable to get sink pad of nvosd \n")
 
     osdsinkpad.add_probe(Gst.PadProbeType.BUFFER, osd_sink_pad_buffer_probe, 0)
+    port = str(args[i+2])
+    port = '5' + port[1:]
 
-    udpsink_port_num = 5400
+    udpsink_port_num = int(port)
+
     sink = Gst.ElementFactory.make("udpsink", "udpsink")
     if not sink:
         sys.stderr.write(" Unable to create udpsink")
@@ -246,9 +249,10 @@ def main(args):
         f"( udpsrc name=pay0 port={udpsink_port_num} buffer-size=524288 caps=\"application/x-rtp, media=video, clock-rate=90000, encoding-name=(string){detector.ENCODER_CODEC}, payload=96 \" )"
     )
     factory.set_shared(True)
-    server.get_mount_points().add_factory("/gst_test", factory)
+    mount_point = '/' + str(args[i + 3])
+    server.get_mount_points().add_factory(mount_point, factory)
 
-    print(f"\n ***Launched RTSP Streaming at rtsp://localhost:{rtsp_port_num}/gst_test ***\n\n")
+    print(f"\n ***Launched RTSP Streaming at rtsp://localhost:{rtsp_port_num}{mount_point} ***\n\n")
 
     # List the sources
     print("Now playing...")

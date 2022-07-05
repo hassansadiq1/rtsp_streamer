@@ -25,25 +25,25 @@
 [property]
 gpu-id=0
 net-scale-factor=0.0039215697906911373
-tlt-model-key=tlt_encode
-model-engine-file=../yolov5s.engine
+model-engine-file=/home/rtsp_streamer/model_b1_gpu0_fp16.engine
+custom-network-config=/home/rtsp_streamer/model/yolov5s.cfg
+model-file=/home/rtsp_streamer/model/yolov5s.wts
 labelfile-path=labels.txt
 #input-dims=3;544;960;0
 batch-size=1
-process-mode=1
-model-color-format=0
 network-mode=2
 num-detected-classes=80
-cluster-mode=4
 interval=0
+process-mode=1
+model-color-format=0
+cluster-mode=4
 gie-unique-id=1
 custom-lib-path=../nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
 network-type=0
-parse-bbox-func-name=NvDsInferParseCustomYoloV5
+parse-bbox-func-name=NvDsInferParseYolo
+engine-create-func-name=NvDsInferYoloCudaEngineGet
+maintain-aspect-ratio=0
 
 [class-attrs-all]
-pre-cluster-threshold=0.4
-## Set eps=0.7 and minBoxes for cluster-mode=1(DBSCAN)
-eps=0.7
-minBoxes=1
+pre-cluster-threshold=0
 

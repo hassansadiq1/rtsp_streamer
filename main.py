@@ -173,7 +173,7 @@ def main(args):
         sys.exit(1)
 
     # Standard GStreamer initialization
-    GObject.threads_init()
+    # GObject.threads_init()
     Gst.init(None)
 
     # Create gstreamer elements */

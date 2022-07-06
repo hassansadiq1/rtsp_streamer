@@ -250,23 +250,6 @@ def main(args):
     detector._pipeline.add(udp_sink_1)
     detector._rtppay1.link(udp_sink_1)
 
-    # Start streaming
-    rtsp_port_num_1 = int(args[i + 2])
-
-    server = GstRtspServer.RTSPServer.new()
-    server.props.service = f"{rtsp_port_num_1}"
-    server.attach(None)
-
-    factory = GstRtspServer.RTSPMediaFactory.new()
-    factory.set_launch(
-        f"( udpsrc name=pay0 port={udpsink_port_num_1} buffer-size=524288 caps=\"application/x-rtp, media=video, clock-rate=90000, encoding-name=(string){detector.ENCODER_CODEC}, payload=96 \" )"
-    )
-    factory.set_shared(True)
-    mount_point = '/' + str(args[i + 3])
-    server.get_mount_points().add_factory(mount_point, factory)
-
-    print(f"\n ***Launched Processed RTSP Streaming at rtsp://localhost:{rtsp_port_num_1}{mount_point} ***\n\n")
-
     port2 = str(args[i+2])
     port2 = '6' + port1[1:]
 
@@ -286,21 +269,41 @@ def main(args):
     detector._rtppay2.link(udp_sink_2)
 
     # Start streaming
-    rtsp_port_num_2 = rtsp_port_num_1 + 1
+    # rtsp_port_num_2 = rtsp_port_num + 1
+
+    # server = GstRtspServer.RTSPServer.new()
+    # server.props.service = f"{rtsp_port_num_2}"
+    # server.attach(None)
+
+    rtsp_port_num = int(args[i + 2])
 
     server = GstRtspServer.RTSPServer.new()
-    server.props.service = f"{rtsp_port_num_2}"
+    server.props.service = f"{rtsp_port_num}"
     server.attach(None)
 
-    factory = GstRtspServer.RTSPMediaFactory.new()
-    factory.set_launch(
+    factory_1 = GstRtspServer.RTSPMediaFactory.new()
+    factory_1.set_launch(
+        f"( udpsrc name=pay0 port={udpsink_port_num_1} buffer-size=524288 caps=\"application/x-rtp, media=video, clock-rate=90000, encoding-name=(string){detector.ENCODER_CODEC}, payload=96 \" )"
+    )
+    factory_1.set_shared(True)
+
+
+    factory_2 = GstRtspServer.RTSPMediaFactory.new()
+    factory_2.set_launch(
         f"( udpsrc name=pay0 port={udpsink_port_num_2} buffer-size=524288 caps=\"application/x-rtp, media=video, clock-rate=90000, encoding-name=(string){detector.ENCODER_CODEC}, payload=96 \" )"
     )
-    factory.set_shared(True)
-    mount_point = '/' + str(args[i + 3])
-    server.get_mount_points().add_factory(mount_point, factory)
+    factory_2.set_shared(True)
 
-    print(f"\n ***Launched Orignial RTSP Streaming at rtsp://localhost:{rtsp_port_num_2}{mount_point} ***\n\n")
+    mount_point = '/' + str(args[i + 3])
+    server.get_mount_points().add_factory(mount_point, factory_1)
+
+    print(f"\n ***Launched Processed RTSP Streaming at rtsp://localhost:{rtsp_port_num}{mount_point} ***\n\n")
+
+    mount_point = '/orignial_' + str(args[i + 3])
+    # server.get_mount_points().remove_factory(mount_point, factory_1)
+    server.get_mount_points().add_factory(mount_point, factory_2)
+
+    print(f"\n ***Launched Orignial RTSP Streaming at rtsp://localhost:{rtsp_port_num}{mount_point} ***\n\n")
 
     # List the sources
     print("Now playing...")
